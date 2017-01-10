@@ -6,7 +6,7 @@
 #'@param sleep_time An integer with default value 1s
 #'@param user_key A string
 setGeneric("deepblue_wait_request", function(request_id, sleep_time = 1,
-                                             user_key=deepblue_USER_KEY)
+                                             user_key=deepblue_options("user_key"))
 {
     info = deepblue_info(request_id, user_key)
     state = info$state
@@ -29,6 +29,9 @@ setGeneric("deepblue_wait_request", function(request_id, sleep_time = 1,
 #'
 #'@param request_id - Id of the request that will be downloaded
 #'@param user_key A string
+#'@param force_download forces DeepBlueR to download the request overwriting
+#' any results that might already be in the cache
+#'@param do_not_cache whether to use local caching of requests
 #'@return grange_regions Final output in GRanges format or as data frame
 #'@examples
 #' data_id = deepblue_select_experiments(
@@ -38,18 +41,27 @@ setGeneric("deepblue_wait_request", function(request_id, sleep_time = 1,
 #' request_data = deepblue_download_request_data(request_id)
 setGeneric("deepblue_download_request_data",
            function(request_id,
-                    user_key=deepblue_USER_KEY)
+                    user_key=deepblue_options("user_key"),
+                    force_download = deepblue_options("force_download"),
+                    do_not_cache = deepblue_options("do_not_cache"))
            {
     deepblue_switch_get_request_data(request_id = request_id,
-                                     user_key = user_key)
+                                     user_key = user_key,
+                                     force_download = force_download,
+                                     do_not_cache = do_not_cache)
 })
 
-#' @import XML RCurl 
 #' @importFrom R.utils bunzip2
+#' @importFrom filehash dbInsert
+#' @importFrom filehash dbFetch
+#' @importFrom filehash dbExists
 #' @title switch_get_request_data
 #' @param request_id The request command generated
 #' with deepblue_get_request_data
 #' @param user_key the user_key used to submit the request.
+#' @param force_download forces DeepBlueR to download the request overwriting
+#' any results that might already be in the cache
+#' @param do_not_cache whether to use local caching of requests
 #' @description Download the requested data from DeepBlue.
 #' @return request data
 #' Can be either region sets,
@@ -57,17 +69,29 @@ setGeneric("deepblue_download_request_data",
 #' @aliases get_request_data
 #' @keywords internal
 deepblue_switch_get_request_data = function(request_id,
-                                            user_key=deepblue_USER_KEY)
+                                            user_key=deepblue_options("user_key"),
+                                            force_download=deepblue_options("force_download"),
+                                            do_not_cache=deepblue_options("do_not_cache"))
 {
+    #check if results is in cache
+    if(!do_not_cache){
+        db <- deepblue_get_db()
+        if(!force_download){
+            if(dbExists(db, request_id)) return(dbFetch(db, request_id))
+        }
+    }
+
+    #check if result is already done
     deepblue_wait_request(request_id, user_key=user_key)
 
+    #check if something went wrong
     request_info = deepblue_info(request_id, user_key)
     if (request_info$state != "done") {
         stop("Processing was not finished.
              Please, check it status with deepblue_info(request_id)");
     }
     command = request_info$command
-    
+
     if(command %in% c("get_regions", "score_matrix")){
         url =
             paste(
@@ -80,45 +104,48 @@ deepblue_switch_get_request_data = function(request_id,
         R.utils::bunzip2(temp_download, unzipped_request, remove = FALSE, skip = TRUE)
         file.remove(temp_download)
         on.exit(file.remove(unzipped_request))
-    } 
+    }
     else{
         # DEFAULT
         # count_regions
         # get_experiments_by_query
         # coverage
         request_data <- deepblue_get_request_data(request_id, user_key)
-        
-        if(command == "count_regions")
-            return(as.numeric(request_data))
-        else return(request_data)
-        
+
+        if(command == "count_regions"){
+            request_data <- as.numeric(request_data)
+        }
+
+        if(!do_not_cache) dbInsert(db, request_id, request_data)
+        return(request_data)
     }
 
     # Only the get_regions and score_matrix commands can have
     # the data converted to tables.
     message(paste("Reading file from", unzipped_request))
-    
+
     regions_df = deepblue_convert_to_df(
         file_to_parse=unzipped_request, request_info=request_info)
 
     if (request_info$command %in%
         c("score_matrix", "get_experiments_by_query") ||
         request_info$format == "") {
+        if(!do_not_cache) dbInsert(db, request_id, regions_df)
         return (regions_df)
     }
 
     else if(command == "get_regions"){
         if(nrow(regions_df) > 0){
-            
+
             if("START" %in% colnames(regions_df) &&
                "END" %in% colnames(regions_df)){
                 regions_df$START <- as.integer(regions_df$START)
                 regions_df$END <- as.integer(regions_df$END)
-                return(deepblue_convert_to_grange(df=regions_df))
+                regions_df <- deepblue_convert_to_grange(df=regions_df)
             }
-            else{
-                return(regions_df)
-            }
+
+            if(!do_not_cache) dbInsert(db, request_id, regions_df)
+            return(regions_df)
         }
         else
             stop("No regions were returned in this request.")
@@ -138,7 +165,7 @@ deepblue_switch_get_request_data = function(request_id,
 #'@keywords internal
 deepblue_convert_to_df = function(file_to_parse, request_info,
     dict=col_dict){
-    
+
     if("format" %in% names(request_info)) {
         if (request_info$format == "") {
             request_info$format = "CHROMOSOME,START,END"
@@ -160,7 +187,7 @@ deepblue_convert_to_df = function(file_to_parse, request_info,
             else if (col_type == 'category') return ('factor')
             else return(col_type)
         }, USE.NAMES = FALSE)
-        
+
         fread(input = file_to_parse,
               sep="\t",
               colClasses = col_types,
@@ -175,7 +202,7 @@ deepblue_convert_to_df = function(file_to_parse, request_info,
               header = TRUE,
               strip.white = FALSE,
               stringsAsFactors = FALSE,
-              data.table = TRUE)    
+              data.table = TRUE)
     }
 }
 
@@ -265,4 +292,38 @@ deepblue_parse_gtf <- function(all_gtf){
     })
 
     return(dplyr::bind_rows(parsed_results))
+}
+
+
+#' Format byte size as human readable units
+#' @source utils:::format.object_size
+#' @param x size in bytes
+#' @param units target unit or 'auto'
+#'
+#' @return formatted size
+#'
+deepblue_format_object_size <- function (x, units = "b"){
+    units <- match.arg(units, c("b", "auto", "Kb", "Mb", "Gb",
+                                "Tb", "Pb", "B", "KB", "MB", "GB", "TB", "PB", "KiB",
+                                "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"))
+    if (units == "auto")
+        units <- if (x >= 1024^4)
+            "Tb"
+    else if (x >= 1024^3)
+        "Gb"
+    else if (x >= 1024^2)
+        "Mb"
+    else if (x >= 1024)
+        "Kb"
+    else "b"
+    switch(units, b = , B = paste(x, "bytes"), Kb = , KB = paste(round(x/1024,
+               1L), "Kb"), Mb = , MB = paste(round(x/1024^2, 1L), "Mb"),
+           Gb = , GB = paste(round(x/1024^3, 1L), "Gb"), Tb = ,
+           TB = paste(round(x/1024^4, 1L), "Tb"), Pb = , PB = paste(round(x/1024^5,
+              1L), "Pb"), KiB = paste(round(x/1024, 1L), "KiB"),
+           MiB = paste(round(x/1024^2, 1L), "MiB"), GiB = paste(round(x/1024^3,
+              1L), "GiB"), TiB = paste(round(x/1024^4, 1L), "TiB"),
+           PiB = paste(round(x/1024^5, 1L), "PiB"), EiB = paste(round(x/1024^6,
+              1L), "EiB"), ZiB = paste(round(x/1024^7, 1L), "ZiB"),
+           YiB = paste(round(x/1024^8, 1L), "YiB"))
 }

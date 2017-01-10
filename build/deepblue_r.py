@@ -75,13 +75,13 @@ deepblue_%(name)s <- function(%(parameter_names)s) {
             user_key = user_key
         )
     }
-    
+
     if(is.data.frame(value[[2]]) && "count" %%in%% colnames(value[[2]])){
         result <- value[[2]]
         result$count <- as.integer(result$count)
         return(result)
     }
-    
+
     return(value[[2]])
 }
 """
@@ -160,7 +160,7 @@ def main():
     for p in cmd["parameters"]:
 
       if p[0] == "user_key":
-        param_names.append("user_key=deepblue_USER_KEY")
+        param_names.append("user_key=deepblue_options('user_key')")
       elif p[0] == "extra_metadata":
         param_names.append("extra_metadata=NULL")
       else:
@@ -178,7 +178,7 @@ def main():
       params_documentation.append(param_tmpl  % {"name": p[0],
                                                  "type": p[1],
                                                  "vector" : s_vector,
-                                                 "description" : p[3]})
+                                                 "description" : p[3].replace('%', '\%')})
     titles.append(title_tmpl % {'name': name})
     results = []
     for r in cmd['results']:
@@ -212,7 +212,7 @@ def main():
                            "parameter_convertion": parameters_list_convertion,
                            "name": name,
                            "documentation": command_description,
-                           'url': "deepblue_URL"}
+                           'url': "deepblue_options('url')"}
 
   print commands_long_doc
 

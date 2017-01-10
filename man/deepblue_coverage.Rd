@@ -5,7 +5,7 @@
 \title{coverage}
 \usage{
 deepblue_coverage(query_id = NULL, genome = NULL,
-  user_key = deepblue_USER_KEY)
+  user_key = deepblue_options("user_key"))
 }
 \arguments{
 \item{query_id}{- A string (Query ID)}
@@ -28,6 +28,7 @@ deepblue_coverage(query_id = data_id, genome="hg19")
 }
 \seealso{
 Other Operating on the data regions: \code{\link{deepblue_aggregate}},
+  \code{\link{deepblue_binning}},
   \code{\link{deepblue_count_regions}},
   \code{\link{deepblue_extend}},
   \code{\link{deepblue_filter_regions}},
@@ -37,6 +38,7 @@ Other Operating on the data regions: \code{\link{deepblue_aggregate}},
   \code{\link{deepblue_input_regions}},
   \code{\link{deepblue_intersection}},
   \code{\link{deepblue_merge_queries}},
+  \code{\link{deepblue_overlap}},
   \code{\link{deepblue_query_cache}},
   \code{\link{deepblue_query_experiment_type}},
   \code{\link{deepblue_score_matrix}},

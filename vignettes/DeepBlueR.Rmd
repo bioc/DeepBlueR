@@ -1,6 +1,6 @@
 ---
-title: "The DeepBlue epigenomic data server - R package"
-author: "Felipe Albrecht"
+title: "DeepBlueR - DeepBlue Epigenomic Data Server - R package"
+author: "Felipe Albrecht, Markus List"
 date: "`r Sys.Date()`"
 output:
   html_document:
@@ -14,12 +14,12 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-![DeepBlueR logo](logo.png)
+![](logo.png)
 
 # Introduction
 
-The DeepBlue Epigenomic Data Server is a tool that allows researchers to access
-data from various epigenomic mapping consortia such as DEEP, BLUEPRINT or
+The DeepBlue Epigenomic Data Server is an online application that allows researchers to access
+data from various epigenomic mapping consortia such as DEEP, BLUEPRINT, ENCODE, or
 ROADMAP. DeepBlue can be accessed through a
 [web interface](http://deepblue.mpi-inf.mpg.de) or programmatically via its
 [API](http://deepblue.mpi-inf.mpg.de/api.php). The usage of the API is
@@ -66,23 +66,15 @@ provided by the epigenome mapping consortia.
 ## Installation
 
 Installation of DeepBlueR and its companion packages can be
-performed using the bioconductor installer:
+performed using the Bioconductor installer:
 
 ```{r, eval = FALSE, echo=TRUE, warning=FALSE, message=FALSE}
 source("https://bioconductor.org/biocLite.R")
 biocLite("DeepBlueR")
 ```
 
-Alternatively, the development version of DeepBlueR is available on the
-bioconductor development channel or via github using the 'devtools' R package:
-
-```{r, eval = FALSE, echo=TRUE, warning=FALSE, message=FALSE}
-library(devtools)
-install_github("MPIIComputationalEpigenetics/DeepBlueR")
-```
-
-The package name is ```DeepBlue``` and it can be loaded via:
-```{r, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE}
+The package name is ```DeepBlueR``` and it can be loaded via:
+```{r, echo = TRUE, warning=FALSE, message=FALSE, error=FALSE}
 library(DeepBlueR)
 ```
 
@@ -108,8 +100,10 @@ A list of all commands available by DeepBlue is provided in its
  help(package="DeepBlueR")
  ```
 
-For reference, following are listed the most used DeepBlue commands. Note that
- each command has the prefix 'deepblue_*', e.g. deepblue_select_genes.
+In the following we listed the most frequently used DeepBlue commands. The full
+list of commands is available [here](http://deepblue.mpi-inf.mpg.de/api.php).
+Note that each command in the following two tables has the prefix
+'deepblue_*', e.g. deepblue_select_genes.
 
 | Category        | Command                 | Description                        |
 |-----------------|-------------------------|------------------------------------|
@@ -131,43 +125,49 @@ For reference, following are listed the most used DeepBlue commands. Note that
 | Operation       | aggregate               | Aggregate and summarize regions    |
 |                 | filter_regions          | Filter regions by theirs attributes|
 |                 | flank                   | Generate flanking regions          |
-|                 | intersection            | Filter overlapping regions         |
+|                 | intersection            | Filter for intersecting regions    |
+|                 | overlap                 | Filter for regions overlapping by at least a specific size |
 |                 | merge_queries           | Merge two regions set              |
 | Result          | count_regions           | Count selected regions             |
 |                 | score_matrix            | Request a score matrix             |
 |                 | get_regions             | Request the selected regions       |
+|                 | binning                 | Bin results according to counts    |
 | Request         | get_request data        | Obtain the requested data          |
 
 
-This package provides a set of functions for facilitate the API usage:
+In addition, this package provides a set of convenience functions not part of
+the DeepBlue API, such as:
 
-| Category | Command               | Description                             |
-|----------|-----------------------|-----------------------------------------|
-| Request  | batch_export_results  | Download the data a set of requests     |
-|          | download_request_data | Download and convert the requested data |
-
-
+| Category | Command               | Description                                       |
+|----------|-----------------------|---------------------------------------------------|
+| Request  | batch_export_results  | Download the results for a list of requests       |
+|          | download_request_data | Download and convert the requested data (blocking)|
+|          | export_meta_data      | Export metadata to a tab delimited file           |
+|          | export_tab            | Export any result as tab delimited file           |
+|          | export_bed            | Export GenomicRanges results as BED file          |
 
 # DeepBlue usage examples
 
 In the following we give a number of increasingly complex examples illustrating
-what DeepBlue can achieve for you in your epigenomic data analysis work-flow.
+what DeepBlue can achieve in your epigenomic data analysis work-flow.
 We go beyond the online description of these examples by showing how the
 retrieved information can be further used in R.
 
-One of the first tasks in DeepBlue is listing the data. This can be achieved
-in three ways:
+One of the first tasks in DeepBlue is finding the data of interest.
+This can be achieved in three ways:
 
-* Using full-text search with the ```search``` command
-* Listing the available data with the ```list_*``` commands
+* Using full-text search with the ```deepblue_search``` command
+* Listing the available data with the
+```deepblue_list_{experiments, annotations, ...}``` commands
 * Using the companion [DeepBlue web interface](http://deepblue.mpi-inf.mpg.de/)
 site for listing the data
 
 ### Full-text search
 
-In this example, we use the command ```search``` to find experiments that
-contain the texts H3k27AC, blood, and peaks in their metadata. We put the names
- in single quotes to show that these names must be in the metadata.
+In this example, we use the command ```deepblue_search``` to
+find experiments that contain the keywords 'H3k27AC', 'blood', and 'peaks' in
+their metadata. We put the names in single quotes to show that these names must
+be in the metadata.
 
 ```{r, echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
 # We are selecting the experiments with terms 'H3k27AC', 'blood', and
@@ -190,8 +190,8 @@ custom_table = do.call("rbind", apply(experiments_found, 1, function(experiment)
 
 ### Listing experiments
 
-We use the ```list_experiments``` command to list all experiments with the
-corresponding values in theirs metadata.
+We use the ```deepblue_list_experiments``` command to list all experiments with
+the corresponding values in their metadata.
 
 ```{r, echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
 experiments = deepblue_list_experiments(type="peaks", epigenetic_mark="H3K4me3",
@@ -201,9 +201,9 @@ experiments = deepblue_list_experiments(type="peaks", epigenetic_mark="H3K4me3",
 
 ### Accessing the extra-metadata
 The extra-metadata is important because it contains information that is not
-stored in the mandatory metadata fields. We use the info command to access an
-experiment's metadata and its extra-metadata fields.
-The following example prints the ```file_url``` attribute that it is contained
+stored in the mandatory metadata fields. We use the ```deepblue_info``` command
+to access an experiment's metadata- and extra-metadata fields.
+The following example prints the ```file_url``` attribute that is contained
 in the data imported from the ENCODE project.
 
 ```{r, echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
@@ -212,14 +212,17 @@ print(info$extra_metadata$file_url)
 ```
 
 ### Select epigenomic data
-We use the ```select_experiments``` command to select all genomic regions from
-the two informed experiments. We use the ```count_regions``` command with
-the ```query_id``` value returned by the ```select_experiments```.
-The ```count_regions``` command is asynchronous. It means that the user receives
-a ```request_id``` and should check the status of this request. The specific
-DeepBlueR package command ```download_request_data``` wait for the processing
-finishes in the server, download the data, and convert to a GRanges object.
+We use the ```deepblue_select_experiments``` command to select all genomic
+regions from the two informed experiments. We use the
+```deepblue_count_regions``` command with the ```query_id``` value returned
+by the ```deepblue_select_experiments``` command.
 
+The ```deepblue_count_regions``` command is executed asynchronously.
+This means that the user receives a ```request_id``` and should check the status
+of this request. In contrast to the command ```deepblue_get_request_data```,
+the DeepBlueR package-specific command ```deepblue_download_request_data```
+will wait for the processing to finish, before downloading the data. Moreover,
+this command will convert any regions to a GRanges object.
 
 ```{R, echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
 query_id = deepblue_select_experiments(
@@ -232,20 +235,22 @@ requested_data = deepblue_download_request_data(request_id=request_id)
 print(paste("The selected experiments have", requested_data, "regions."))
 ```
 
-### Output with desired columns
-We use the ```select_experiments``` command to select the genomic regions from
-the experiments that are in the chromosome 1, position 0 to 50,000,000.
+### Output with selected columns
+We use the ```deepblue_select_experiments``` command to select genomic
+regions from the experiments that are in chromosome 1, position 0 to 50,000,000.
 
-We use the ```get_regions``` command with the ```query_id``` value returned by
-the ```select_experiments``` and the desired file columns.
-The columns @NAME and @BIOSOURCE include the experiment name and the experiment
-biosource in the row output.
+We then use the ```deepblue_get_regions``` command with the ```query_id``` value
+ returned by the ```deepblue_select_experiments``` command to request the
+regions with the selected columns.
+Selecting the columns ```@NAME``` and ```@BIOSOURCE``` represent the experiment
+name and the experiment biosource.
 
-The ```get_regions``` command is asynchronous. It means that the user receives a
-```request_id``` and should check the status of this request.
-The specific DeepBlueR package command ```download_request_data``` wait for the
-processing finishes in the server, download the data, and convert to a GRanges
-object.
+The ```deepblue_get_regions``` command is executed asynchronously. This means
+that the user receives a ```request_id``` to be able to check for the status of
+this request. In contrast to the command ```deepblue_get_request_data```,
+the DeepBlueR package-specific command ```deepblue_download_request_data```
+will wait for the processing to finish, before downloading the data. Moreover,
+this command will convert any regions to a GRanges object.
 
 ```{R, echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
 query_id = deepblue_select_experiments (
@@ -262,26 +267,25 @@ regions
 ```
 
 ### Filter epigenomic data by metadata
-We use the ```list_samples``` command to obtain all samples from the biosource
-myeloid cell from the BLUEPRINT project. The ```list_samples``` returns a list
-of samples with their IDs and content.
+We use the ```deepblue_list_samples``` command to obtain all samples with the
+biosource 'myeloid cell' from the BLUEPRINT project.
+The ```deepblue_list_samples``` returns a list of samples with their IDs and
+content. We extract the sample IDs from this list and use it in the
+```deepblue_select_regions``` command to selects genomic regions that are in
+chromosome 1, position 0 to 50,000.
 
-We extract the IDs from this list and use it in the ```select_regions```
-command.
+Then, we use the ```deepblue_get_regions``` command with the parameter
+```query_id``` returned by the ```deepblue_select_regions``` command and the
+columns ```@NAME```, ```SAMPLE_ID```, and ```@BIOSOURCE``` representing the
+experiment name, the sample ID, and the experiment biosource.
 
-The ```select_regions``` command selects the genomic regions that are in the
-chromosome 1, position 0 to 50,000 of all experiments that have the given
-samples IDs.
 
-Then, we use the ```get_regions``` command with the parameters: ```query_id```
-returned by the ```select_regions``` and the desired file columns.
-The columns @NAME, SAMPLE_ID, and @BIOSOURCE include the experiment name,
-the sample ID, and the experiment biosource in the row output.
-
-The ```get_regions``` command is asynchronous. It means that the user receives
-a ```request_id``` and should check the status of this request. The specific
-DeepBlueR package command ```download_request_data``` wait for the processing
-finishes in the server, download the data, and convert to a GRanges object.
+The ```deepblue_get_regions``` command is executed asynchronously. This means
+that the user receives a ```request_id``` to be able to check for the status of
+this request. In contrast to the command ```deepblue_get_request_data```,
+the DeepBlueR package-specific command ```deepblue_download_request_data```
+will wait for the processing to finish, before downloading the data. Moreover,
+this command will convert any regions to a GRanges object.
 
 ```{R, echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
 samples = deepblue_list_samples(
@@ -297,25 +301,23 @@ head(regions,1)
 ```
 
 ### Filter epigenomic data by region attributes
-We use the ```select_experiments``` command for selecting the genomic
-regions from the experiments that are in the
-chromosome 1, position 0 to 50,000,000.
 
-We filter the genomic regions that have the value of the column SIGNAL_VALUE
-larger than 10.
+We use the ```deepblue_select_experiments``` command for selecting genomic
+regions from two specific experiments that are in
+chromosome 1, position 0 to 50,000,000. Then, we filter these for regions with
+```SIGNAL_VALUE``` > 10 and ```PEAK``` > 1000.
 
-We filter the genomic regions that have the value of the column PEAK larger
-than 1000.
+Then, we use the ```deepblue_get_regions``` command with the parameter
+```query_id``` returned by the ```deepblue_select_regions``` command and the
+columns ```@NAME``` and ```@BIOSOURCE``` representing the
+experiment name and the experiment biosource.
 
-Then, we use the ```get_regions``` command with the parameters: ```query_id```
-returned by the select_experiments and the desired file columns.
-The columns @NAME and @BIOSOURCE include the experiment name and the experiment
-biosource in the row output.
-
-The ```get_regions``` command is asynchronous. It means that the user receives
-a ```request_id``` and should check the status of this request. The specific
-DeepBlueR package command ```download_request_data``` wait for the processing
-finishes in the server, download the data, and convert to a GRanges object.
+The ```deepblue_get_regions``` command is executed asynchronously. This means
+that the user receives a ```request_id``` to be able to check for the status of
+this request. In contrast to the command ```deepblue_get_request_data```,
+the DeepBlueR package-specific command ```deepblue_download_request_data```
+will wait for the processing to finish, before downloading the data. Moreover,
+this command will convert any regions to a GRanges object.
 
 ```{R, echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
 query_id = deepblue_select_experiments(
@@ -334,25 +336,27 @@ regions = deepblue_download_request_data(request_id=request_id)
 regions
 ```
 
-### Find overlapping regions
-We use the ```select_experiments``` command to select the genomic regions
-from the experiments that are in the chromosome 1, position 0 to 50,000,000.
+### Find intersecting regions
 
-We use the ```select_annotations``` command to select the genomic regions
-in the chromosome 1 of the annotation promoters of the genome assembly GRCh38.
+We use the ```deepblue_select_experiments``` command for selecting genomic
+regions from two specific experiments that are in
+chromosome 1, position 0 to 50,000,000. Then, we filter these for regions with
+```SIGNAL_VALUE``` > 10 and ```PEAK``` > 1000.
 
-The command intersection filters all regions of the ```query_id``` that
-overlap with at least one ```promoters_id``` region.
+The command ```deepblue_intersection``` filters for all regions of the
+```query_id``` that intersect with at least one region in ```promoters_id```.
 
-We use the ```get_regions``` command with the parameters: ```query_id```
-returned by the ```select_experiments``` and the desired file columns.
-The columns @NAME and @BIOSOURCE include the experiment name and the experiment
-biosource in the row output.
+Then, we use the ```deepblue_get_regions``` command with the parameter
+```query_id``` returned by the ```deepblue_select_regions``` command and the
+columns ```@NAME``` and ```@BIOSOURCE``` representing the
+experiment name and the experiment biosource.
 
-The ```get_regions``` command is asynchronous. It means that the user receives
-a ```request_id``` and should check the status of this request. The specific
-DeepBlueR package command ```download_request_data``` wait for the processing
-finishes in the server, download the data, and convert to a GRanges object.
+The ```deepblue_get_regions``` command is executed asynchronously. This means
+that the user receives a ```request_id``` to be able to check for the status of
+this request. In contrast to the command ```deepblue_get_request_data```,
+the DeepBlueR package-specific command ```deepblue_download_request_data```
+will wait for the processing to finish, before downloading the data. Moreover,
+this command will convert any regions to a GRanges object.
 
 ```{R, echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
 query_id = deepblue_select_experiments(
@@ -372,7 +376,7 @@ regions
 
 ```{r, message=FALSE, error=FALSE, warning=FALSE}
 library(Gviz)
-atrack <- AnnotationTrack(regions, name = "Overlapping regions",
+atrack <- AnnotationTrack(regions, name = "Intersecting regions",
     group = regions$`@BIOSOURCE`, genome="hg38")
 gtrack <- GenomeAxisTrack()
 itrack <- IdeogramTrack(genome = "hg38", chromosome = "chr1")
@@ -382,29 +386,19 @@ plotTracks(list(itrack, atrack, gtrack), groupAnnotation="group", fontsize=18,
 
 
 ### Retrieve DNA sequences
-We use the ```select_experiments``` command to select the genomic regions from
-the experiments that are in the chromosome 1, position 0 to 50,000,000.
 
-We filter the genomic regions that have the value of the
-column SIGNAL_VALUE higher than 10.
-
-We filter the genomic regions that have the value of the
-column PEAK higher than 1000.
-
-The meta-column @LENGTH contains the genomic region length,
+The meta-column ```@LENGTH``` contains the genomic region length,
 and we filter the genomic regions where this value is smaller than 2,000.
 
-We use the ```get_regions``` with the ```query_id``` returned by
-the ```select_experiments``` and the desired file columns. In this case,
-we use the meta-column @SEQUENCE, that includes the DNA Sequence in the
+The meta-column ```@SEQUENCE``` includes the DNA Sequence in the
 genomic region output.
 
-The ```get_regions``` command is asynchronous. It means that the user receives
-a ```request_id``` and should check the status of this request.
-The specific DeepBlueR package command ```download_request_data``` wait for the
-processing finishes in the server, download the data, and convert to
-a GRanges object.
-
+The ```deepblue_get_regions``` command is executed asynchronously. This means
+that the user receives a ```request_id``` to be able to check for the status of
+this request. In contrast to the command ```deepblue_get_request_data```,
+the DeepBlueR package-specific command ```deepblue_download_request_data```
+will wait for the processing to finish, before downloading the data. Moreover,
+this command will convert any regions to a GRanges object.
 
 ```{R, echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
 query_id = deepblue_select_experiments(
@@ -424,33 +418,16 @@ head(regions, 1)
 ```
 
 ### DNA pattern matching operations
-We use the ```find_pattern``` command to generate an annotation of the genomic
-locations where the pattern TATAA happens in the genome assembly GRCh38.
+We use the ```deepblue_find_pattern``` command to find all position of a given
+pattern in the genome. An example is finding all locations of 'TATAA'
+in genome assembly GRCh38.
 
-The ```find_pattern``` command requires permission to include annotations.
-If the user (e.g. anonymous user) does not have this permission,
-an error will be returned.
+We use the ```deepblue_select_experiments``` command to select genomic regions
+that are in chromosome 1, position 0 to 50,000,000 from the selected
+experiments.
 
-Nevertheless, we have already processed this pattern, and the annotation was
-generated with the name "Pattern TATAAA (non-overlap) in the genome GRCh38".
-We selected the genomic regions of the first chromosome of this annotation with
-the select_annotations command.
-
-We use the ```select_experiments``` command to select the genomic regions from
-the experiments that are in the chromosome 1, position 0 to 50,000,000.
-
-The command ```intersection``` selects all regions of the ```query_id``` that
-overlap with at least one tataa_regions region.
-
-We use the ```get_regions``` with the ```query_id``` returned by the
-```select_experiments``` and the desired file columns. In this case,
-we use the meta-column @SEQUENCE, that includes the DNA Sequence in the genomic
-region output.
-
-The ```get_regions``` command is asynchronous. It means that the user receives
-a ```request_id``` and should check the status of this request. The specific
-DeepBlueR package command ```download_request_data``` wait for the processing
-finishes in the server, download the data, and convert to a GRanges object.
+The command ```deepblue_intersect``` selects all regions of the ```query_id```
+that intersect with at least one `tataa_regions` region.
 
 ```{R, echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
 tataa_regions = deepblue_select_annotations(
@@ -470,10 +447,10 @@ head(regions, 3)
 
 ### Counting motifs in a region
 
-The meta column ```@COUNT.MOTIF()``` allows to count how many times a motif
-appears in the genomic region. For example, the following code return the
-experiment regions with the region length, the numbers of ```G```, ```CG```,
-```GC```, and the DNA sequence.
+The meta column ```@COUNT.MOTIF()``` allows for counting how many times a motif
+appears in the selected genomic region. For example, the following code return
+the experiment regions with the DNA sequence length, the counts of ```G```,
+```CG```, ```GC```, and the DNA sequence itself.
 
 ```{R, echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
 experiment_data = deepblue_select_experiments(
@@ -485,23 +462,13 @@ head(regions, 3)
 ```
 
 ### Genes
-We use the ```select_genes``` command to select the gene RP11-34P13
-from the gene set gencode v23.
+We use the ```deepblue_select_genes``` command to select the gene `RP11-34P13`
+from GENCODE v23.
 
-The selected genes behave like a regular genomic region that,
-for example, can be filtered by their content.
-
-We use the @GENE_ATTRIBUTE meta-column to select the genomic regions
-that are lincRNA.
-
-We use the ```get_regions``` with the ```query_id``` returned
-by the ```select_experiments``` and the desired file columns.
-
-The ```get_regions``` command is asynchronous. It means that the user
-receives a ```request_id``` and should check the status of this request.
-The specific DeepBlueR package command ```download_request_data``` wait for
-the processing finishes in the server, download the data, and convert to a
-GRanges object.
+The selected genes behave like a regular genomic region, which,
+for example, can be filtered by their attributes. We use the
+```@GENE_ATTRIBUTE``` meta-column to select the genomic regions
+that are annotated as lincRNAs.
 
 ```{R, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
 q_genes = deepblue_select_genes(genes="RP11-34P13", gene_model="gencode v23")
@@ -514,17 +481,12 @@ regions
 ```
 
 ### Aggregate and summarize regions
-We use the ```get_regions``` command with the ```query_id``` value returned by
-the select_experiments and the desired file columns.
 
-We use the ```select_annotations``` command to select the genomic regions,
-from position 0 to 50,000,000 in the chromosome 1 of the annotation CpG Islands
-of the genome assembly GRCh38.
+The command ```deepblue_aggregate``` summarizes the ```query_id``` regions using
+the ```cpg_islands``` regions defined by the corresponding annotation
+as boundaries.
 
-The command ```aggregate``` aggregates the ```query_id``` regions using the
-```cpg_islands``` regions as boundaries.
-
-The aggregate values can be accessed through the @AGG meta-columns.
+The aggregated values can be accessed through the ```@AGG.*``` meta-columns.
 
 ```{R, echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
 query_id = deepblue_select_experiments (
@@ -542,14 +504,14 @@ request_id = deepblue_get_regions(query_id=overlapped,
     output_format=
       "CHROMOSOME,START,END,@AGG.MIN,@AGG.MAX,@AGG.MEAN,@AGG.VAR")
 regions = deepblue_download_request_data(request_id=request_id)
-regions
 ```
 
 ### Gene expression
-We use the ```select_expressions``` command to select the expression
-and map to a genomic coordinates. In the following example we get the gene
-expression of 3 genes NOX3, NOXA1, and NOX4 from all biosources related to
-the ```hematopoietic stem cell``` from the BLUEPRINT project.
+In the following example we obtain the gene expression levels of three genes,
+i.e., NOX3, NOXA1, and NOX4 from all biosources related to
+the ```hematopoietic stem cell``` biosource from the BLUEPRINT project. With
+related we refer to children of this biosource term in the ontologies used by
+DeepBlue.
 
 ```{R, echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
 hsc_children = deepblue_get_biosource_children("hematopoietic stem cell")
@@ -578,17 +540,13 @@ regions
 ```
 
 ### Tiling regions
-We use the ```get_regions``` command with the ```query_id``` value returned by
-the ```select_experiments``` and the desired file columns.
 
-We use the ```tiling_regions``` command to generate a set of consecutive
-genomic regions of size 100,000 on the chromosome 1 of the genome
+We use the ```deepblue_tiling_regions``` command to generate a set of
+consecutive genomic regions of size 100,000 from chromosome 1 of the genome
 assembly GRCh38.
 
-The command ```aggregate``` aggregates the ```query_id``` regions by their
-column named VALUE, using the ```cpg_islands``` regions as boundaries.
-
-The aggregation values can be accessed through the @AGG meta-columns.
+The command ```deepblue_aggregate``` summarizes the ```query_id``` regions using
+the column `VALUE` and the ```cpg_islands``` regions as boundaries.
 
 ```{R, echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
 # Selecting the data from 2 experiments:
@@ -633,20 +591,18 @@ print(AGG.plot)
 
 
 ### Flanking regions
-We use the ```select_genes``` command to generate a set of genes from
-the gene set gencode v19.
+We use the ```deepblue_select_genes``` command to generate a set of genes from
+the gene model GENCODE v19.
 
-The ```flank``` command obtains flanking regions based on the existing regions.
-First, we generate regions that starts 2500bp before the regions and with the
-length of 2000bp. After, we generate the regions that starts 1500 bases pair
-after the regions end and have 500 base pairs. We consider the regions strand
-in both cases.
+The ```deepblue_flank``` command derives flanking regions from existing
+regions. First, we derive regions that start 2500bp before the initially
+selected regions with a length of 2000bp. Next, we derive the regions that start
+1500 base pairs after the initially selected regions with 500 base pairs length.
+For each region, we consider the DNA strand.
 
-The ```merge_queries``` command merges the region sets defined by the query IDs.
-We merge the two flanking regions sets with the genes' regions set.
-
-We use the ```get_regions``` with the ```query_id``` that is returned
-by the ```merge_queries```.
+The ```deepblue_merge_queries``` command merges the region sets defined by
+two query IDs. Here, we merge the two flanking regions sets we created based
+on the initially selected genes.
 
 ```{R, echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
 # Select the RP11-34P13 gene locations from gencode v23
@@ -684,25 +640,13 @@ regions
 ```
 
 ### Calculated columns
-We use the ```get_regions``` command with the ```query_id``` value returned by
-the ```select_experiments``` and the desired file columns.
 
-We use the ```select_annotations``` command to select the genomic regions, from
-position 0 to 50,000,000 in the chromosome 1 of the annotation CpG Islands of
-the genome assembly GRCh38.
+Here, we summarize DNA methylation levels for CpG islands of a specific
+experiment. Next, we remove those CpG islands for which no values were
+found using ```@AGG.COUNT``` > 0.
 
-The command ```aggregate``` aggregates the ```query_id``` regions by their
-column named VALUE, using the ```cpg_islands``` regions as boundaries.
-
-We select the ```aggregated``` regions that aggregated at least one region from
-the selected experiments (@AGG.COUNT > 0).
-
-The aggregation values can be accessed through the @AGG meta-columns.
-
-We use the ```get_regions``` with the ```query_id``` value returned by the
-```select_experiments``` and the desired file columns.
-We use the @CALCULATED meta-column to transform the aggregate region @AGG.MEAN
-value to its log scale value.
+We use the ```@CALCULATED``` meta-column to transform the ```@AGG.MEAN```
+value to log scale.
 
 
 ```{R, echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
@@ -750,7 +694,7 @@ head(regions, 5)
 ```
 
 Any numerical values returned by DeepBlue can also be conveniently displayed
-using, for example, the DataTrack feature of the GViz bioconductor package as
+using, for example, the DataTrack feature of the GViz Bioconductor package as
 shown here:
 
 ```{r, warning=FALSE, error=FALSE}
@@ -767,22 +711,22 @@ plotTracks(list(itrack, atrack, dtrack, gtrack), type="histogram", fontsize=18,
 
 
 ### Score matrix
-The list ```experiments``` contains the names of the experiments fow which we
-want to build a score matrix.
 
-We will build the score matrix using the column named VALUE.
+Here, we select a small number of experiments for
+which we want to build a score matrix based on the column ```VALUE```.
 
-We select the CpG islands, which will be used as aggregated regions boundaries.
+We use CpG islands as aggregated regions boundaries.
 
-The ```score_matrix``` command receives the dictionary with the
+The ```deepblue_score_matrix``` command expects a named list with the
 experiments names and columns that will be used for aggregation,
 the regions' boundaries, and the operation that will be performed
 (min, max, mean, var, sd, median, count).
 
-The ```score_matrix``` command is asynchronous. It means that the user receives
-a ```request_id``` and should check the status of this request. The specific
-DeepBlue-R package command ```download_request_data``` wait for the processing
-finishes in the server, download the data, and convert to a GRanges object.
+The ```deepblue_score_matrix``` command is executed asynchronously. The
+command ```download_request_data``` will return a matrix in which the first
+three columns correspond to the chromosome, start position and end position.
+The remaining columns will carry the names of the experiments and hold the
+corresponding aggregated values.
 
 
 ```{R, echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
@@ -814,13 +758,509 @@ score_matrix = deepblue_download_request_data(request_id=request_id)
 head(score_matrix, 5)
 ```
 
-```{r, warning=FALSE, echo=TRUE, error=FALSE, eval=TRUE}
+```{r, fig.width = 11, warning=FALSE, echo=TRUE, error=FALSE, eval=TRUE}
 library(ggplot2)
-score_matrix = tidyr::gather(score_matrix,
+score_matrix_plot = tidyr::gather(score_matrix,
     "experiment", "methylation", -CHROMOSOME, -START, -END)
-score_matrix$START <- as.factor(score_matrix$START)
-ggplot(score_matrix, aes(x=START, y=experiment, fill=methylation)) +
+score_matrix_plot$START <- as.factor(score_matrix_plot$START)
+ggplot(score_matrix_plot, aes(x=START, y=experiment, fill=methylation)) +
     geom_tile() +
     theme(axis.text.x=element_text(angle=-90))
 ```
+
+### Data Export
+
+DeepBlueR allows you to conveniently save results to disk. Any result can be
+saved as tab delimited file using ```deepblue_export_tab```. For example, we can
+save the score matrix generated in the above example:
+
+```{r, eval = FALSE}
+deepblue_export_tab(score_matrix, file.name = "my_score_matrix")
+```
+
+Results obtained with ```deepblue_get_regions``` are of type GenomicRanges and
+can be exported as tab delimited files preserving all columns or as BED files,
+where a specific column can optionally be selected to populate the 'score'
+column of the BED file. To demonstrate this, we use the result from the
+tiling regions example further above:
+
+```{r, eval=FALSE}
+request_id = deepblue_get_regions(query_id=overlapped,
+    output_format="CHROMOSOME,START,END,@AGG.MEAN,@AGG.SD")
+
+regions = deepblue_download_request_data(request_id=request_id)
+deepblue_export_bed(regions,
+                    file.name = "my_tiling_regions",
+                    score.field = "@AGG.MEAN")
+```
+
+Furthermore, metadata associated with any id can be stored locally using the
+```deepblue_export_meta_data``` command. To this end, we first obtain the
+experiment id of the file we used in the tiling regions example.
+
+```{r, eval=FALSE}
+exp_id <- deepblue_name_to_id(
+    "GC_T14_10.CPG_methylation_calls.bs_call.GRCh38.20160531.wig",
+    collection = "experiments")$id
+
+deepblue_export_meta_data(exp_id, file.name = "GC_T14")
+```
+
+This command can also handle lists of ids, for instance:
+
+```{r, eval=FALSE}
+deepblue_export_meta_data(list("e30035", "e30036"),
+file.name = "test_export")
+```
+
+In some cases, users will perform a series of requests. We provide the
+command ```deepblue_batch_export``` to save these results and their associated
+metadata to disk in one go. This method will save each file as it becomes
+available, i.e. it will be saved once the request is successfully
+processed by DeepBlue:
+
+```{r, eval=FALSE}
+experiments = deepblue_list_experiments(type="peaks", epigenetic_mark="H3K4me3",
+    biosource=c("inflammatory macrophage", "macrophage"),
+    project="BLUEPRINT Epigenome")
+experiment_names = deepblue_extract_names(experiments)
+
+request_ids = foreach(experiment = experiment_names) %do%{
+  query_id = deepblue_select_experiments(experiment_name = experiment,
+                                        chromosome = "chr21")
+
+  request_id = deepblue_get_regions(query_id =query_id,
+    output_format = "CHROMOSOME,START,END")
+}
+request_data = deepblue_batch_export_results(request_ids,
+                             target.directory = "BLUEPRINT macrophages chr21")
+```
+
+
+## Options
+
+DeepBlueR comes with default options that can be changed by the user. To list
+the current options use the following command:
+
+```{r, echo=TRUE, eval = TRUE, warning=FALSE, message=FALSE}
+deepblue_options()
+```
+
+- ```url``` This is the URL of the DeepBlue application server and should not be changed
+- ```user_key``` This option can be replaced by the personal key of the user after 
+successful registration at http://deepblue.mpi-inf.mpg.de. The key can be found 
+by logging into the web application and clicking on the user name in the top
+left corner. Registered users have access to advanced features of DeepBlue, e.g.
+they can review previous requests.
+- ```do_not_cache``` Allows users to switch off the caching functionality of 
+DeepBlueR. See [Caching].
+- ```force_download``` If the users wishes to overwrite cached results for the
+following requests, this option can be switched on. See [Caching].
+- ```debug``` Switching on this option enables verbose output only useful for 
+debugging.
+
+Changing an option works as follows:
+
+```{r, echo=TRUE, eval = TRUE, warning=FALSE, message=FALSE}
+deepblue_options(do_not_cache = TRUE)
+```
+
+Another example (replace 'my_user_key' with the actual key):
+
+```{r, echo=TRUE, eval = FALSE, warning=FALSE, message=FALSE}
+deepblue_options(user_key = "my_user_key")
+```
+
+In case you wish to restore the default options simply call
+
+```{r, echo=TRUE, eval = FALSE, warning=FALSE, message=FALSE}
+deepblue_reset_options()
+```
+
+
+## Caching
+
+DeepBlueR by default creates a file 'DeepBlueR.cache' in the current working
+directory. Downloaded results / regions are stored there and can be instantly
+retrieved, which is particularly useful for users with limited network bandwith.
+However, in case caching is not desired it can be switched off (see [Options])
+
+To check the status of the cache you can use the following command:
+
+```{r, echo=TRUE, eval = FALSE, warning=FALSE, message=FALSE}
+deepblue_cache_status()
+```
+
+This will report the cache size and the number of requests currently stored. 
+Alternatively, users can list the request ids for which results are available:
+
+```{r, echo=TRUE, eval = FALSE, warning=FALSE, message=FALSE}
+deepblue_list_cached_requests()
+```
+
+Over time, the cache can quickly grow in size. It is possible to remove 
+individual requests from the cache if the request id is known:
+
+```{r, echo=TRUE, eval = FALSE, warning=FALSE, message=FALSE}
+deepblue_delete_request_from_cache("r123")
+```
+
+In most cases it will be simpler to simply delete the cache:
+```{r, echo=TRUE, eval = FALSE, warning=FALSE, message=FALSE}
+deepblue_clear_cache()
+```
+
+# Large-scale analysis of DNA methylation across 212 samples from the BLUEPRINT consortium
+
+## Aim
+
+Here, we will show how DeepBlueR can be used to generate an
+overview heatmap of variable positions in more than 200
+BLUEPRINT DNA methylation experiments. The amount of data considered here would
+normally be too huge to be processed on a local R installation. However, using
+DeepBlue and server-side processing of the data, we can facilitate this
+large-scale analysis easily.
+
+## Dependencies
+
+In the first step, we load the DeepBlueR package, as well as packages for data
+retrieval, matrix operations and plotting.
+
+```{r dependencies, message=FALSE, warning=FALSE}
+library(DeepBlueR)
+library(gplots)
+library(RColorBrewer)
+library(matrixStats)
+library(stringr)
+```
+
+## Select experiments
+
+Next, we list all available BLUEPRINT DNA methylation experiments.
+(412 files that match the required metadata were available during the edition
+ of this vignette.)
+
+```{r echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+blueprint_DNA_meth <- deepblue_list_experiments(genome = "GRCh38",
+                          epigenetic_mark = "DNA Methylation",
+                          technique = "Bisulfite-Seq",
+                          project = "BLUEPRINT EPIGENOME")
+
+blueprint_DNA_meth
+```
+
+We are only interested in a subset of those files and filter for call files
+(opposed to coverage files).
+
+```{r echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+blueprint_DNA_meth <- blueprint_DNA_meth[grep("bs_call",
+    deepblue_extract_names(blueprint_DNA_meth)),]
+
+blueprint_DNA_meth
+```
+
+## Select experiment column
+
+Each of these files has a column, named `VALUE`, that holds the
+DNA methylation beta values. There are two possibilities to select
+this column across several files.
+
+First, we assume that the column in question has a different
+name in each file. We thus have to create a list that holds the column name for
+each of them. Such a list can be generated using standard R commands:
+
+```{r echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+exp_columns <- list(nrow(blueprint_DNA_meth))
+
+for(i in 1:nrow(blueprint_DNA_meth)){
+    exp_columns[[i]] <- "VALUE"
+}
+names(exp_columns) <- deepblue_extract_names(blueprint_DNA_meth)
+```
+
+In most cases, the same column name will apply for each
+file. We thus implemented a short hand function for generating the above list
+with a single column name for all files.
+
+```{r echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+exp_columns <- deepblue_select_column(blueprint_DNA_meth, "VALUE")
+```
+
+## Filter for genomic regions of interest using annotations
+
+In the next operation, we consider that not all methylation sites
+will be informative for clustering the data. We thus filter for those regions
+that are part of the BLUEPRINT regulatory build, a modified version of the
+[ENSEMBL regulatory build](http://www.ensembl.org/info/genome/funcgen/regulatory_build.html)
+that contains promoters, promoter flanking regions, enhancers, CTCF binding sites,
+transcription factor binding sites and open chromatin regions. As we can see,
+DeepBlueR returns a query id, which we store for later use.
+
+```{r echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+blueprint_regulatory_regions <- deepblue_select_annotations(
+    annotation_name = "Blueprint Ensembl Regulatory Build",
+    genome = "GRCh38")
+
+blueprint_regulatory_regions
+```
+
+DeepBlue has several annotations that can be used to filter for informative
+sites. We could, for example, also filter for CpG islands.
+
+```{r, eval=FALSE}
+deepblue_select_annotations(annotation_name = "Cpg Islands",
+                            genome = "GRCh38")
+```
+
+A list of all annotations currently available for a genome is given by the following command.
+
+```{r echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+deepblue_list_annotations(genome = "GRCh38")
+```
+
+New annotations may be included upon users request.
+
+In case we want to include the entire genome in an aggregated version
+DeepBlue supports the concept of tiling regions. In this process, the genomic
+range of interest will be binned into tiles of a given size (here 5kb).
+
+```{r, eval=FALSE}
+tiling_regions <- deepblue_tiling_regions(size=5000,
+                                          genome="GRCh38")
+```
+
+## Generate a score matrix
+
+In the above step we have defined a set of regions of interest that we want to
+interrogate in R to, for example, cluster samples. To this end, DeepBlue can
+build a score matrix, in which the selected genomic regions are aggregated on
+the server to reduce the complexity and size of the data. We request such a
+score matrix in which regulatory regions are aggregated by the mean as follows.
+Note that we use the variables 'exp_columns' and 'blueprint_regulatory_regions'
+that we have defined above.
+
+```{r echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+request_id <- deepblue_score_matrix(
+    experiments_columns = exp_columns,
+    aggregation_function = "mean",
+    aggregation_regions_id = blueprint_regulatory_regions)
+
+request_id
+```
+
+After triggering this function, DeepBlue queues our task and will execute it
+when resources become available. We also observe that DeepBlue returns a
+request id, which we can use to query the status of the operation.
+
+```{r echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+deepblue_info(request_id)$state
+```
+
+When the operation is finished, we can download the score matrix and store it
+in a local variable. For DeepBlueR, we implemented several strategies to
+improve the performance of data retrieval. For instance, we modified the
+existing XML-RPC package to be more efficient in the context of DeepBlue when
+it comes to parsing nested XML data. Moreover, we retrieve tabular data directly
+in a tab separated file format, which can be processed much faster in R. Finally,
+we also compress data on the server side to reduce download time. Here, we only
+show the first five columns out of 215.
+
+```{r echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+score_matrix <- deepblue_download_request_data(request_id = request_id)
+score_matrix[,1:5, with=FALSE]
+```
+
+The download is 212.8 MB in size. The size of the data we handled on DeepBlue
+to extract this information is roughly 212 x ~450 MB ~= 95 GB and thus more
+than can be handled in R on most desktop computers. We next show how this score
+matrix can be used to plot a heatmap where samples are clustered by the
+Pearson correlation coefficient, revealing that samples originating from
+the same cell type are more similar in DNA methylation.
+
+## Generating a heatmap
+
+### Metadata and colors
+
+In preparation of the heatmap plot, we need to generate an RColorBrewer palette.
+This allows us to create a color palette for more than 9 colors.
+```{r echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+getPalette <- colorRampPalette(brewer.pal(9, "Set1"))
+```
+
+For each experiment, we collect metadata.
+```{r echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+experiments_info <- deepblue_info(deepblue_extract_ids(blueprint_DNA_meth))
+```
+
+All metadata is parsed to a nested R list. We refer to the DeepBlue paper for
+a description of available metadata. Here, we show the metadata associated
+with just one of the samples.
+
+```{r echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+head(experiments_info[[1]], 10)
+```
+
+For this analysis, we are only interested in the biosource name,
+i.e. the cell type. We can retrieve this information using standard R syntax.
+Note that we show only the first 6 entries here.
+
+```{r echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+biosource <- unlist(lapply(experiments_info, function(x){ x$sample_info$biosource_name}))
+head(biosource)
+```
+
+To save some space on the plot, we replace positive with + and negative with -.
+```{r echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+biosource <- str_replace_all(biosource, "-positive", "+")
+biosource <- str_replace_all(biosource, "-negative", "-")
+```
+
+For the same reason, we remove the words 'terminally differentiated' from
+one of the cell types.
+
+```{r echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+biosource <- str_replace(biosource, ", terminally differentiated", "")
+```
+
+Using above color palette, we can now assign a unique color to each cell type.
+```{r echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+color_map <- data.frame(biosource = unique(biosource),
+                        color = getPalette(length(unique(biosource))))
+
+head(color_map)
+```
+
+Using above table, we can now assign the colors to each experiment
+according to its cell type / biosource.
+
+```{r echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+exp_names <- unlist(lapply(experiments_info, function(x){ x$name}))
+
+biosource_colors <- data.frame(name = exp_names, biosource = biosource)
+biosource_colors <- dplyr::left_join(biosource_colors, color_map, by = "biosource")
+head(biosource_colors)
+```
+
+Finally, we transform this data frame into a vector that is compatible with the
+heatmap function.
+
+```{r echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+color_vector <- as.character(biosource_colors$color)
+names(color_vector) <-  biosource_colors$biosource
+head(color_vector)
+```
+
+### Processing the input data
+
+We remove the first three columns (CHROMOSOME, START, END)
+and convert the data frame to a numeric matrix.
+
+```{r echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+filtered_score_matrix <- as.matrix(score_matrix[,-c(1:3), with=FALSE])
+head(filtered_score_matrix[,1:3])
+```
+
+Next, we compute the variance of each row and retain only genomic regions
+with variance > 0.05 for plotting. Plotting all regions would consume too much
+memory and more importantly, regions that do not show variance also do not
+allow us to spot differences between cell types in the heatmap.
+
+```{r echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+message("regions before: ", nrow(filtered_score_matrix))
+filtered_score_matrix_rowVars <- rowVars(filtered_score_matrix, na.rm = TRUE)
+filtered_score_matrix <- filtered_score_matrix[which(filtered_score_matrix_rowVars > 0.05),]
+message("regions after: ", nrow(filtered_score_matrix))
+```
+
+To be able to cluster samples, we remove regions that have missing values in at
+least one of the experiments.
+
+```{r echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+message("regions before: ", nrow(filtered_score_matrix))
+filtered_score_matrix <- filtered_score_matrix[which(complete.cases(filtered_score_matrix)),]
+message("regions after: ", nrow(filtered_score_matrix))
+```
+
+IMPORTANT: The order of columns in the score matrix is not the same as in the
+exp_columns list used in the request. We thus have to order the matrix by
+the experiment names in the color map. This is crucial to make
+sure we assign the correct cell type to each sample!
+
+```{r echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+filtered_score_matrix <- filtered_score_matrix[,exp_names]
+```
+
+### Plotting
+
+We plot a heatmap in which the variable regions are shown across all samples.
+On top of the columns, we create a dendrogram based on Pearson correlation
+More precisely, we convert the Pearson correlation, a similarity
+measure, to a distance, such that it can be used with hierarchical clustering.
+
+```{r, fig.width=11, echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+ heatmap.2(filtered_score_matrix,labRow = NA, labCol = NA,
+          trace = "none", ColSideColors = color_vector,
+          hclust=function(x) hclust(x,method="complete"),
+          distfun=function(x) as.dist(1-cor(t(x), method = "pearson")),
+          Rowv = TRUE, dendrogram = "column",
+          key.xlab = "beta value", denscol = "black", keysize = 1.5,
+          key.title = NA)
+
+```
+
+```{r, fig.height=6, echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
+  plot.new()
+
+  legend(x = 0, y = 1,
+       legend = color_map$biosource,
+       col = as.character(color_map$color),
+       text.width = 0.6,
+       lty= 1,
+       lwd = 6,
+       cex = 0.7,
+       y.intersp = 0.7,
+       x.intersp = 0.7,
+       inset=c(-0.21,-0.11))
+
+```
+
+# Further reading material
+
+To obtain a general overview of DeepBlue, we recommend starting with the
+[DeepBlue publication](http://nar.oxfordjournals.org/lookup/doi/10.1093/nar/gkw211)
+and a list of all DeepBlue commands is available in
+its [API page](http://deepblue.mpi-inf.mpg.de/api.php).
+
+
+You can have a look at the other use cases included in the R package
+and list them with
+```{r, eval=FALSE}
+demo(package = "DeepBlueR")
+```
+
+Individual use cases can be triggered with
+
+```{r, eval=FALSE}
+demo("use_case1", package = "DeepBlueR")
+```
+
+Note that the example presented here corresponds to use case 4 in the R package.
+
+# Final remarks
+
+Finally, we encourage you to try to reproduce [Python examples](http://deepblue.mpi-inf.mpg.de/examples.php)
+in R and to read the [DeepBlue manual](https://www.gitbook.com/book/felipealbrecht/deepblue-epigenomic-data-server-manual/details).
+
+Finally, we want to highlight the possibility to browse and access existing data in DeepBlue
+conveniently in the [web interface](http://deepblue.mpi-inf.mpg.de). The web
+interface also allows you to select experiments in a grid like view.
+
+
+Should you encounter any problems with DeepBlueR, we kindly ask you to create
+an issue in the BioConductor [DeepBlueR support page](https://support.bioconductor.org/t/deepbluer/).
+
+The R code in the DeepBlueR package is under the GPLv3 license and we welcome
+contributions of other developers. Finally, we would like to thank the
+Bioconductor team for its support in making DeepBlueR available to a wide
+audience of users.
 

@@ -5,7 +5,7 @@
 \title{input_regions}
 \usage{
 deepblue_input_regions(genome = NULL, region_set = NULL,
-  user_key = deepblue_USER_KEY)
+  user_key = deepblue_options("user_key"))
 }
 \arguments{
 \item{genome}{- A string (the target genome)}
@@ -37,6 +37,7 @@ deepblue_input_regions(genome = "hg19",
 }
 \seealso{
 Other Operating on the data regions: \code{\link{deepblue_aggregate}},
+  \code{\link{deepblue_binning}},
   \code{\link{deepblue_count_regions}},
   \code{\link{deepblue_coverage}},
   \code{\link{deepblue_extend}},
@@ -46,6 +47,7 @@ Other Operating on the data regions: \code{\link{deepblue_aggregate}},
   \code{\link{deepblue_get_regions}},
   \code{\link{deepblue_intersection}},
   \code{\link{deepblue_merge_queries}},
+  \code{\link{deepblue_overlap}},
   \code{\link{deepblue_query_cache}},
   \code{\link{deepblue_query_experiment_type}},
   \code{\link{deepblue_score_matrix}},

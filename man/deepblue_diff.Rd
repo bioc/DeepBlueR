@@ -4,7 +4,7 @@
 \alias{deepblue_diff}
 \title{diff}
 \usage{
-deepblue_diff(id1, id2, user_key = deepblue_USER_KEY)
+deepblue_diff(id1, id2, user_key = deepblue_options("user_key"))
 }
 \arguments{
 \item{id1}{- A DeepBlue id}
@@ -17,7 +17,7 @@ deepblue_diff(id1, id2, user_key = deepblue_USER_KEY)
 None
 }
 \description{
-A utility command that creates a diff view of info 
+A utility command that creates a diff view of info
 for two DeepBlue ids
 }
 \examples{

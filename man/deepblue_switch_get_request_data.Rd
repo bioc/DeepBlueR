@@ -5,13 +5,21 @@
 \alias{get_request_data}
 \title{switch_get_request_data}
 \usage{
-deepblue_switch_get_request_data(request_id, user_key = deepblue_USER_KEY)
+deepblue_switch_get_request_data(request_id,
+  user_key = deepblue_options("user_key"),
+  force_download = deepblue_options("force_download"),
+  do_not_cache = deepblue_options("do_not_cache"))
 }
 \arguments{
 \item{request_id}{The request command generated
 with deepblue_get_request_data}
 
 \item{user_key}{the user_key used to submit the request.}
+
+\item{force_download}{forces DeepBlueR to download the request overwriting
+any results that might already be in the cache}
+
+\item{do_not_cache}{whether to use local caching of requests}
 }
 \value{
 request data

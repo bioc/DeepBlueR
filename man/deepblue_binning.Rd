@@ -20,7 +20,7 @@ deepblue_binning(query_data_id = NULL, column = NULL, bins = NULL,
 request_id - A string (Request ID - Use it to retrieve the result with info() and get_request_data())
 }
 \description{
-Create set of numbers containing the the count values of the selected data columns
+Bin results according to counts.
 }
 \examples{
 experiment_id = deepblue_select_experiments(
@@ -32,6 +32,7 @@ deepblue_binning (query_data_id=experiment_id,
 }
 \seealso{
 Other Operating on the data regions: \code{\link{deepblue_aggregate}},
+  \code{\link{deepblue_calculate_enrichment}},
   \code{\link{deepblue_count_regions}},
   \code{\link{deepblue_coverage}},
   \code{\link{deepblue_extend}},
@@ -51,4 +52,3 @@ Other Operating on the data regions: \code{\link{deepblue_aggregate}},
   \code{\link{deepblue_select_regions}},
   \code{\link{deepblue_tiling_regions}}
 }
-

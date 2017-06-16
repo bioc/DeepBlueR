@@ -997,6 +997,7 @@ DeepBlueR returns a query id, which we store for later use.
 ```{r echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
 blueprint_regulatory_regions <- deepblue_select_annotations(
     annotation_name = "Blueprint Ensembl Regulatory Build",
+    chromosome="chr22",
     genome = "GRCh38")
 
 blueprint_regulatory_regions

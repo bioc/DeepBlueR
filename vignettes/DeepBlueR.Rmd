@@ -951,7 +951,7 @@ We are only interested in a subset of those files and filter for call files
 (opposed to coverage files).
 
 ```{r echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE}
-blueprint_DNA_meth <- blueprint_DNA_meth[grep("bs_call",
+blueprint_DNA_meth <- blueprint_DNA_meth[grep("CPG_methylation_calls.bs_call",
     deepblue_extract_names(blueprint_DNA_meth)),]
 
 blueprint_DNA_meth

@@ -3391,7 +3391,7 @@ deepblue_query_experiment_type <- function(query_id= NULL, type= NULL, user_key=
 #'
 #' @examples
 #' tiling_regions = deepblue_tiling_regions(
-#'     size=100000, genome="hg19", chromosome="chr1")
+#'     size=100000, genome="mm10", chromosome="chr1")
 #' deepblue_score_matrix(
 #'     experiments_columns =
 #'         list(ENCFF721EKA="VALUE", ENCFF781VVH="VALUE"),

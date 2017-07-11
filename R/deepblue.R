@@ -1,5 +1,5 @@
 # Accessing Deepblue through R
-# For DeepBlue version 1.12.13
+# For DeepBlue version 1.13.1
 
 # We include a modified version of the XML-RPC library:
 # http://bioconductor.org/packages/release/extra/html/XMLRPC.html
@@ -112,77 +112,6 @@ deepblue_binning <- function(query_data_id= NULL, column= NULL, bins= NULL, user
         }
     }
     value <- xml.rpc(deepblue_options('url'), 'binning', query_data_id, column, if (is.null(bins)) NULL else as.integer(bins), user_key)
-    status = value[[1]]
-    method_name = as.character(match.call()[[1]])
-    message(paste("Called method:", method_name))
-    message(paste("Reported status was:", status))
-    if (status == "error") {
-        stop(value[[2]])
-    }
-    if (!exists("user_key")) {
-        user_key = NULL
-    }
-    if(length(value) == 1) return(NULL)
-    else if(!is.list(value[[2]])){
-        DeepBlueCommand(call = sys.call(),
-            status = value[[1]],
-            query_id = value[[2]],
-            previous_commands = previous_commands,
-            user_key = user_key
-        )
-    }
-
-    if(is.data.frame(value[[2]]) && "count" %in% colnames(value[[2]])){
-        result <- value[[2]]
-        result$count <- as.integer(result$count)
-        return(result)
-    }
-
-    return(value[[2]])
-}
-
-
-
-#' @export 
-#' 
-#' @title calculate_enrichment 
-#' @description  Enrich the regions based on Gene Ontology terms.
-#' @family Operating on the data regions
-#' 
-#' @param query_id - A string (Query ID)
-#' @param gene_model - A string (the gene model)
-#' @param user_key - A string (users token key)
-#'
-#' @return request_id - A string (Request ID - Use it to retrieve the result with info() and get_request_data())
-#'
-#' @examples
-#' data_id = deepblue_select_experiments(
-#'     experiment_name="E002-H3K9ac.narrowPeak.bed")
-#' 
-#' filtered_id = deepblue_filter_regions(query_id = data_id,
-#'     field = "VALUE",
-#'     operation = ">",
-#'     value = "100",
-#'     type = "number",
-#'     user_key = "anonymous_key")
-#' 
-#' deepblue_calculate_enrichment(query_id = filtered_id,
-#'    gene_model = "gencode v23")
-#'
-deepblue_calculate_enrichment <- function(query_id= NULL, gene_model= NULL, user_key=deepblue_options('user_key')) {
-
-    previous_commands <- list()
-    arg.names <- names(as.list(match.call()))
-    for(command_object_name in arg.names[which(arg.names != "")]){
-        if(exists(command_object_name)){
-            command_object <- get(command_object_name)
-            if(is(command_object, "DeepBlueCommand")){
-                previous_commands <- append(previous_commands, command_object)
-                assign(command_object_name, command_object@query_id)
-            }
-        }
-    }
-    value <- xml.rpc(deepblue_options('url'), 'calculate_enrichment', query_id, gene_model, user_key)
     status = value[[1]]
     method_name = as.character(match.call()[[1]])
     message(paste("Called method:", method_name))
@@ -477,7 +406,6 @@ deepblue_commands <- function() {
 #' @examples
 #' gene_names = c('CCR1', 'CD164', 'CD1D', 'CD2', 'CD34', 'CD3G', 'CD44')
 #' deepblue_count_gene_ontology_terms (genes = gene_names, gene_model = "gencode v23")
-#' 
 
 #'
 deepblue_count_gene_ontology_terms <- function(genes= NULL, go_terms= NULL, chromosome= NULL, start= NULL, end= NULL, gene_model= NULL, user_key=deepblue_options('user_key')) {
@@ -650,6 +578,67 @@ deepblue_coverage <- function(query_id= NULL, genome= NULL, user_key=deepblue_op
 
 #' @export 
 #' 
+#' @title distinct_column_values 
+#' @description Obtain the distict values of the field.
+#' @family Operating on the data regions
+#' 
+#' @param query_id - A string (Query ID)
+#' @param field - A string (field that is filtered by)
+#' @param user_key - A string (users token key)
+#'
+#' @return id - A string (id of filtered query)
+#'
+#' @examples
+#' css_experiment <- deepblue_select_experiments ( "wgEncodeBroadHmmK562HMM")
+#' distinct_names_request <- deepblue_distinct_column_values (css_experiment, "NAME")
+#'
+deepblue_distinct_column_values <- function(query_id= NULL, field= NULL, user_key=deepblue_options('user_key')) {
+
+    previous_commands <- list()
+    arg.names <- names(as.list(match.call()))
+    for(command_object_name in arg.names[which(arg.names != "")]){
+        if(exists(command_object_name)){
+            command_object <- get(command_object_name)
+            if(is(command_object, "DeepBlueCommand")){
+                previous_commands <- append(previous_commands, command_object)
+                assign(command_object_name, command_object@query_id)
+            }
+        }
+    }
+    value <- xml.rpc(deepblue_options('url'), 'distinct_column_values', query_id, field, user_key)
+    status = value[[1]]
+    method_name = as.character(match.call()[[1]])
+    message(paste("Called method:", method_name))
+    message(paste("Reported status was:", status))
+    if (status == "error") {
+        stop(value[[2]])
+    }
+    if (!exists("user_key")) {
+        user_key = NULL
+    }
+    if(length(value) == 1) return(NULL)
+    else if(!is.list(value[[2]])){
+        DeepBlueCommand(call = sys.call(),
+            status = value[[1]],
+            query_id = value[[2]],
+            previous_commands = previous_commands,
+            user_key = user_key
+        )
+    }
+
+    if(is.data.frame(value[[2]]) && "count" %in% colnames(value[[2]])){
+        result <- value[[2]]
+        result$count <- as.integer(result$count)
+        return(result)
+    }
+
+    return(value[[2]])
+}
+
+
+
+#' @export 
+#' 
 #' @title echo 
 #' @description Greet the user with the DeepBlue version.
 #' @family Checking DeepBlue status
@@ -675,6 +664,174 @@ deepblue_echo <- function(user_key=deepblue_options('user_key')) {
         }
     }
     value <- xml.rpc(deepblue_options('url'), 'echo', user_key)
+    status = value[[1]]
+    method_name = as.character(match.call()[[1]])
+    message(paste("Called method:", method_name))
+    message(paste("Reported status was:", status))
+    if (status == "error") {
+        stop(value[[2]])
+    }
+    if (!exists("user_key")) {
+        user_key = NULL
+    }
+    if(length(value) == 1) return(NULL)
+    else if(!is.list(value[[2]])){
+        DeepBlueCommand(call = sys.call(),
+            status = value[[1]],
+            query_id = value[[2]],
+            previous_commands = previous_commands,
+            user_key = user_key
+        )
+    }
+
+    if(is.data.frame(value[[2]]) && "count" %in% colnames(value[[2]])){
+        result <- value[[2]]
+        result$count <- as.integer(result$count)
+        return(result)
+    }
+
+    return(value[[2]])
+}
+
+
+
+#' @export 
+#' 
+#' @title enrich_region_overlap 
+#' @description Enrich the regions based on regions overlap analysis.
+#' @family Enrich the genome regions
+#' 
+#' @param query_id - A string (Query ID)
+#' @param background_query_id - A string (query_id containing the regions that will be used as the background data.)
+#' @param datasets - A struct (a map where each key is an identifier and the value is a list containing experiment names or query_ids (you can use both together).)
+#' @param genome - A string (the target genome)
+#' @param user_key - A string (users token key)
+#'
+#' @return request_id - A string (Request ID - Use it to retrieve the result with info() and get_request_data(). The result is a list containing the datasets that overlap with the query_id regions.)
+#'
+#' @examples
+#' query_id = deepblue_select_experiments(
+#'   experiment_name="S00VEQA1.hypo_meth.bs_call.GRCh38.20150707.bed")
+#' 
+#' filtered_query_id = deepblue_filter_regions(
+#'   query_id = query_id,
+#'   field = "AVG_METHYL_LEVEL",
+#'   operation = "<",
+#'   value = "0.0025",
+#'   type="number")
+#' 
+#' rg_10kb_tilling = deepblue_tiling_regions(
+#'     size = 1000,
+#'     genome = "hg19",
+#'     chromosome = "chr1")
+#' 
+#' # We could have included more Epigenetic Marks here
+#' epigenetic_marks <- c("h3k27ac", "H3K27me3", "H3K4me3")
+#' 
+#' histones_datasets = c()
+#' for (i in 1:length(epigenetic_marks)) {
+#'   experiments_list <- deepblue_list_experiments(
+#'     epigenetic_mark=epigenetic_marks[[i]],
+#'     type="peaks",
+#'     genome="grch38",
+#'     project="BLUEPRINT Epigenome");
+#' 
+#'     experiment_names = deepblue_extract_names(experiments_list)
+#'     histones_datasets[[epigenetic_marks[[i]]]] = experiment_names
+#' }
+#' 
+#' deepblue_enrich_region_overlap(
+#'   query_id=filtered_query_id,
+#'   background_query=rg_10kb_tilling,
+#'   datasets=histones_datasets,
+#'   genome="grch38")
+
+#'
+deepblue_enrich_region_overlap <- function(query_id= NULL, background_query_id= NULL, datasets= NULL, genome= NULL, user_key=deepblue_options('user_key')) {
+
+    previous_commands <- list()
+    arg.names <- names(as.list(match.call()))
+    for(command_object_name in arg.names[which(arg.names != "")]){
+        if(exists(command_object_name)){
+            command_object <- get(command_object_name)
+            if(is(command_object, "DeepBlueCommand")){
+                previous_commands <- append(previous_commands, command_object)
+                assign(command_object_name, command_object@query_id)
+            }
+        }
+    }
+    value <- xml.rpc(deepblue_options('url'), 'enrich_region_overlap', query_id, background_query_id, datasets, genome, user_key)
+    status = value[[1]]
+    method_name = as.character(match.call()[[1]])
+    message(paste("Called method:", method_name))
+    message(paste("Reported status was:", status))
+    if (status == "error") {
+        stop(value[[2]])
+    }
+    if (!exists("user_key")) {
+        user_key = NULL
+    }
+    if(length(value) == 1) return(NULL)
+    else if(!is.list(value[[2]])){
+        DeepBlueCommand(call = sys.call(),
+            status = value[[1]],
+            query_id = value[[2]],
+            previous_commands = previous_commands,
+            user_key = user_key
+        )
+    }
+
+    if(is.data.frame(value[[2]]) && "count" %in% colnames(value[[2]])){
+        result <- value[[2]]
+        result$count <- as.integer(result$count)
+        return(result)
+    }
+
+    return(value[[2]])
+}
+
+
+
+#' @export 
+#' 
+#' @title enrich_regions_go_terms 
+#' @description Enrich the regions based on Gene Ontology terms.
+#' @family Enrich the genome regions
+#' 
+#' @param query_id - A string (Query ID)
+#' @param gene_model - A string (the gene model)
+#' @param user_key - A string (users token key)
+#'
+#' @return request_id - A string (Request ID - Use it to retrieve the result with info() and get_request_data(). The result is a list containing the GO terms that overlap with the query_id regions.)
+#'
+#' @examples
+#' data_id = deepblue_select_experiments(
+#'     experiment_name="E002-H3K9ac.narrowPeak.bed")
+#' 
+#' filtered_id = deepblue_filter_regions(query_id = data_id,
+#'     field = "VALUE",
+#'     operation = ">",
+#'     value = "100",
+#'     type = "number",
+#'     user_key = "anonymous_key")
+#' 
+#' deepblue_enrich_regions_go_terms(query_id = filtered_id,
+#'    gene_model = "gencode v23")
+#'
+deepblue_enrich_regions_go_terms <- function(query_id= NULL, gene_model= NULL, user_key=deepblue_options('user_key')) {
+
+    previous_commands <- list()
+    arg.names <- names(as.list(match.call()))
+    for(command_object_name in arg.names[which(arg.names != "")]){
+        if(exists(command_object_name)){
+            command_object <- get(command_object_name)
+            if(is(command_object, "DeepBlueCommand")){
+                previous_commands <- append(previous_commands, command_object)
+                assign(command_object_name, command_object@query_id)
+            }
+        }
+    }
+    value <- xml.rpc(deepblue_options('url'), 'enrich_regions_go_terms', query_id, gene_model, user_key)
     status = value[[1]]
     method_name = as.character(match.call()[[1]])
     message(paste("Called method:", method_name))

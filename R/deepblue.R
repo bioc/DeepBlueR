@@ -1,5 +1,5 @@
 # Accessing Deepblue through R
-# For DeepBlue version 1.13.5
+# For DeepBlue version 1.13.7
 
 # We include a modified version of the XML-RPC library:
 # http://bioconductor.org/packages/release/extra/html/XMLRPC.html

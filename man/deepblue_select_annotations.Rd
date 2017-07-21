@@ -11,7 +11,7 @@ deepblue_select_annotations(annotation_name = NULL, genome = NULL,
 \arguments{
 \item{annotation_name}{- A string or a vector of string (name(s) of selected annotation(s))}
 
-\item{genome}{- A string or a vector of string (the target genome)}
+\item{genome}{- A string (the target genome)}
 
 \item{chromosome}{- A string or a vector of string (chromosome name(s))}
 

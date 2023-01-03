@@ -25,16 +25,16 @@
 #' deepblue_export_tab(regions, target.directory = temp_dir,
 #'                   file.name = "GC_T14_10.CpG_islands")
 deepblue_export_tab <- function(result,
-                                  target.directory = "./",
-                                  file.name){
-    withr::with_options(c(scipen = 10),
-            write.table(result, sep = "\t",
-                row.names = FALSE,
-                quote=FALSE,
-                file = file.path(target.directory,
-                                 paste(file.name,
-                                     ".txt",
-                                     sep=""))))
+                                target.directory = "./",
+                                file.name){
+  withr::with_options(c(scipen = 10),
+                      write.table(result, sep = "\t",
+                                  row.names = FALSE,
+                                  quote=FALSE,
+                                  file = file.path(target.directory,
+                                                   paste(file.name,
+                                                         ".txt",
+                                                         sep=""))))
 }
 
 
@@ -71,36 +71,36 @@ deepblue_export_bed <- function(result,
                                 target.directory = "./",
                                 file.name,
                                 score.field = NULL){
-    if(class(result) != "GRanges" && class(result) == "data.frame"){
-        stop("Results are not in GenomicRanges format. Use deepblue_export_tab instead")
-    }
-    else if(class(result) != "GRanges" && class(result) != "data.frame"){
-        stop(paste("Do not know how to deal with object of class", class(result)))
-    }
-
-    scores <- rep(".", length(GenomicRanges::rank(result)))
-    if(!is.null(score.field)) scores <- elementMetadata(result)[[score.field]]
-    strands <- stringr::str_replace_all(strand(result), "\\*", ".")
-    snames <- c(rep(".", length(result)))
-
-
-    bed_result <- data.frame(seqnames=seqnames(result),
-                     starts=start(result)-1,
-                     ends=end(result),
-                     names=snames,
-                     scores=scores,
-                     strands=strands)
-
-    withr::with_options(c(scipen = 10),
-            write.table(bed_result,
-                file = file.path(target.directory,
-                                 paste(file.name,
-                                       ".bed",
-                                       sep="")),
-                quote = FALSE,
-                sep="\t",
-                row.names = FALSE,
-                col.names = FALSE))
+  if(class(result) != "GRanges" && class(result) == "data.frame"){
+    stop("Results are not in GenomicRanges format. Use deepblue_export_tab instead")
+  }
+  else if(class(result) != "GRanges" && class(result) != "data.frame"){
+    stop(paste("Do not know how to deal with object of class", class(result)))
+  }
+  
+  scores <- rep(".", length(GenomicRanges::rank(result)))
+  if(!is.null(score.field)) scores <- elementMetadata(result)[[score.field]]
+  strands <- stringr::str_replace_all(as.character(strand(result)), "\\*", ".")
+  snames <- c(rep(".", length(result)))
+  
+  
+  bed_result <- data.frame(seqnames=seqnames(result),
+                           starts=start(result)-1,
+                           ends=end(result),
+                           names=snames,
+                           scores=scores,
+                           strands=strands)
+  
+  withr::with_options(c(scipen = 10),
+                      write.table(bed_result,
+                                  file = file.path(target.directory,
+                                                   paste(file.name,
+                                                         ".bed",
+                                                         sep="")),
+                                  quote = FALSE,
+                                  sep="\t",
+                                  row.names = FALSE,
+                                  col.names = FALSE))
 }
 
 #' Convert XML structured meta data to table format
@@ -121,36 +121,36 @@ deepblue_export_bed <- function(result,
 #' deepblue_meta_data_to_table(list("e30035", "e30036"))
 deepblue_meta_data_to_table <- function(ids, user_key = deepblue_options("user_key"))
 {
-    all_meta_data <- deepblue_info(ids, user_key = user_key)
-
-    #for some ids a data table is already returned by deepblue_info, e.g.
-    #samples
-    if(is.data.frame(all_meta_data)) return(all_meta_data)
-
-    #if we have only one id, make a list
-    if(length(ids) == 1) all_meta_data <- list(all_meta_data)
-
-    #just to shut up R CMD check
-    i <- NULL
-
-    foreach(i = 1:length(all_meta_data), .combine = bind_rows) %do%{
-
-        file_info <- all_meta_data[[i]]
-        extra_metadata <- unlist(file_info$extra_metadata)
-
-        file_info$extra_metadata <- NULL
-        file_info$upload_info <- NULL
-        file_info$columns <- NULL
-
-        sample_info <- unlist(file_info$sample_info)
-        file_info$sample_info <- NULL
-
-        meta_data <- unlist(file_info)
-        meta_data <- c(meta_data, sample_info, extra_metadata)
-        meta_data <- as.data.frame(t(meta_data), stringsAsFactors = FALSE)
-
-        return(meta_data)
-    }
+  all_meta_data <- deepblue_info(ids, user_key = user_key)
+  
+  #for some ids a data table is already returned by deepblue_info, e.g.
+  #samples
+  if(is.data.frame(all_meta_data)) return(all_meta_data)
+  
+  #if we have only one id, make a list
+  if(length(ids) == 1) all_meta_data <- list(all_meta_data)
+  
+  #just to shut up R CMD check
+  i <- NULL
+  
+  foreach(i = 1:length(all_meta_data), .combine = bind_rows) %do%{
+    
+    file_info <- all_meta_data[[i]]
+    extra_metadata <- unlist(file_info$extra_metadata)
+    
+    file_info$extra_metadata <- NULL
+    file_info$upload_info <- NULL
+    file_info$columns <- NULL
+    
+    sample_info <- unlist(file_info$sample_info)
+    file_info$sample_info <- NULL
+    
+    meta_data <- unlist(file_info)
+    meta_data <- c(meta_data, sample_info, extra_metadata)
+    meta_data <- as.data.frame(t(meta_data), stringsAsFactors = FALSE)
+    
+    return(meta_data)
+  }
 }
 
 
@@ -170,22 +170,22 @@ deepblue_meta_data_to_table <- function(ids, user_key = deepblue_options("user_k
 #' file.name = "test_export",
 #' target.directory = tempdir())
 deepblue_export_meta_data <- function(ids,
-                                 target.directory = "./",
-                                 file.name,
-                                 user_key = deepblue_options("user_key"))
+                                      target.directory = "./",
+                                      file.name,
+                                      user_key = deepblue_options("user_key"))
 {
-    meta_data <- deepblue_meta_data_to_table(ids)
-
-    withr::with_options(c(scipen = 10),
-                        write.table(meta_data,
-                                    file = file.path(target.directory,
-                                                     paste(file.name,
-                                                           ".meta.txt",
-                                                           sep="")),
-                                    quote = FALSE,
-                                    sep="\t",
-                                    row.names = FALSE,
-                                    col.names = TRUE))
+  meta_data <- deepblue_meta_data_to_table(ids)
+  
+  withr::with_options(c(scipen = 10),
+                      write.table(meta_data,
+                                  file = file.path(target.directory,
+                                                   paste(file.name,
+                                                         ".meta.txt",
+                                                         sep="")),
+                                  quote = FALSE,
+                                  sep="\t",
+                                  row.names = FALSE,
+                                  col.names = TRUE))
 }
 
 #'@export
@@ -213,116 +213,116 @@ deepblue_batch_export_results <- function(requests,
                                           sleep.time = 1,
                                           bed.format = TRUE,
                                           user_key = deepblue_options("user_key")){
-    #to store results
-    all.results <- list()
-    if(is.null(requests))
-        stop("A list of request_info objects or request identifiers is needed.")
-    
-    #remove NAs
-    if (any(is.na(requests))) {
-        message('Removing NA entries in requests.')
-        requests <- requests[!is.na(requests)]
-    }
-
-    #make sure we have a list
-    requests <- as.list(requests)
-
-    #check if there is at least one elt
-    if(length(requests) < 1)
-        stop("Provide a list of at least one request_info
+  #to store results
+  all.results <- list()
+  if(is.null(requests))
+    stop("A list of request_info objects or request identifiers is needed.")
+  
+  #remove NAs
+  if (any(is.na(requests))) {
+    message('Removing NA entries in requests.')
+    requests <- requests[!is.na(requests)]
+  }
+  
+  #make sure we have a list
+  requests <- as.list(requests)
+  
+  #check if there is at least one elt
+  if(length(requests) < 1)
+    stop("Provide a list of at least one request_info
              object or request identifier.")
-
-    #get ids in case we are given request_info objects
-    if(length(requests[[1]]) > 1){
-        for(request in 1:length(requests)){
-            requests[[request]] <- requests[[request]]$`_id`
-        }
+  
+  #get ids in case we are given request_info objects
+  if(length(requests[[1]]) > 1){
+    for(request in 1:length(requests)){
+      requests[[request]] <- requests[[request]]$`_id`
     }
-
-    #remove duplicates
-    requests <- unique(requests)
-
-    #keep track of which instances were already downloaded
-    need.saving <- rep(TRUE, length(requests))
-
-    #count errors
-    errors <- 0
-    error_commands <- list()
-
-    #while any request is not saved
-    while(any(need.saving)){
-        anything.done <- FALSE
-        #go through unsaved requests
-        for(request in which(need.saving)){
-            request_id <- requests[[request]]
-
-            #update info
-            request_info <- deepblue_info(request_id, user_key = user_key)
-
-            if(request_info$state == "done" && need.saving[request])
-            {
-                #check if it is a get region command and download meta data
-                if(request_info$command == "get_regions"){
-                    message(paste("Downloading meta data for id", request_id))
-                    meta_data_request <- deepblue_get_experiments_by_query(
-                        request_info$query_id)
-                    meta_data_experiments <- deepblue_download_request_data(
-                        meta_data_request)
-                }
-                else{
-                    meta_data_experiments <- NULL
-                }
-                #download data
-                message(paste("Downloading results for id", request_id))
-                result <- deepblue_download_request_data(request_id,
-                                                         user_key = user_key)
-                all.results[[request_id]] <- result
-
-                if(!is.null(target.directory)){
-                    #save to disk
-                    if(!dir.exists(target.directory)){
-                    dir.create(target.directory,
-                               showWarnings=FALSE,
-                               recursive = TRUE)
-                    }
-                    file.name <- paste(
-                        prefix,
-                        request_id,
-                        suffix, sep="_")
-                    if(!bed.format){
-                        deepblue_export_tab(result,
-                                            target.directory = target.directory,
-                                            file.name = file.name)
-                    }
-                    else{
-                        deepblue_export_bed(result,
-                                            target.directory = target.directory,
-                                            file.name = file.name)
-                    }
-                    if(!is.null(meta_data_experiments)){
-                        deepblue_export_meta_data(names(meta_data_experiments),
+  }
+  
+  #remove duplicates
+  requests <- unique(requests)
+  
+  #keep track of which instances were already downloaded
+  need.saving <- rep(TRUE, length(requests))
+  
+  #count errors
+  errors <- 0
+  error_commands <- list()
+  
+  #while any request is not saved
+  while(any(need.saving)){
+    anything.done <- FALSE
+    #go through unsaved requests
+    for(request in which(need.saving)){
+      request_id <- requests[[request]]
+      
+      #update info
+      request_info <- deepblue_info(request_id, user_key = user_key)
+      
+      if(request_info$state == "done" && need.saving[request])
+      {
+        #check if it is a get region command and download meta data
+        if(request_info$command == "get_regions"){
+          message(paste("Downloading meta data for id", request_id))
+          meta_data_request <- deepblue_get_experiments_by_query(
+            request_info$query_id)
+          meta_data_experiments <- deepblue_download_request_data(
+            meta_data_request)
+        }
+        else{
+          meta_data_experiments <- NULL
+        }
+        #download data
+        message(paste("Downloading results for id", request_id))
+        result <- deepblue_download_request_data(request_id,
+                                                 user_key = user_key)
+        all.results[[request_id]] <- result
+        
+        if(!is.null(target.directory)){
+          #save to disk
+          if(!dir.exists(target.directory)){
+            dir.create(target.directory,
+                       showWarnings=FALSE,
+                       recursive = TRUE)
+          }
+          file.name <- paste(
+            prefix,
+            request_id,
+            suffix, sep="_")
+          if(!bed.format){
+            deepblue_export_tab(result,
                                 target.directory = target.directory,
                                 file.name = file.name)
-                    }
-                }
-                anything.done <- TRUE
-                need.saving[request] <- FALSE
-            }
-            else if(request_info$state %in% c("failed", "error")
-                    && need.saving[request]){
-                need.saving[request] <- FALSE
-                error_commands[[request_id]] <- request_id
-                errors <- errors + 1
-            }
+          }
+          else{
+            deepblue_export_bed(result,
+                                target.directory = target.directory,
+                                file.name = file.name)
+          }
+          if(!is.null(meta_data_experiments)){
+            deepblue_export_meta_data(names(meta_data_experiments),
+                                      target.directory = target.directory,
+                                      file.name = file.name)
+          }
         }
-        #give DeepBlue some time to make progress
-        if(!anything.done) Sys.sleep(sleep.time)
+        anything.done <- TRUE
+        need.saving[request] <- FALSE
+      }
+      else if(request_info$state %in% c("failed", "error")
+              && need.saving[request]){
+        need.saving[request] <- FALSE
+        error_commands[[request_id]] <- request_id
+        errors <- errors + 1
+      }
     }
-    attr(all.results, "errors") <- error_commands
-    message(paste("Processing of", length(requests),
-                  "requests completed with", errors, "errors"))
-    if(!is.null(target.directory)) message(
-        paste("All result files saved to directory", target.directory))
-    return(all.results)
+    #give DeepBlue some time to make progress
+    if(!anything.done) Sys.sleep(sleep.time)
+  }
+  attr(all.results, "errors") <- error_commands
+  message(paste("Processing of", length(requests),
+                "requests completed with", errors, "errors"))
+  if(!is.null(target.directory)) message(
+    paste("All result files saved to directory", target.directory))
+  return(all.results)
 }
 
